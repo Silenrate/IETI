@@ -1,0 +1,82 @@
+plugins {
+	id 'org.springframework.boot' version '2.4.3'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+	id 'org.sonarqube' version '2.8'
+	id "jacoco"
+}
+
+repositories {
+	mavenCentral()
+}
+
+group = 'edu.eci.ieti'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+dependencies {
+	// https://mvnrepository.com/artifact/org.springframework/spring-webflux
+	// https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-mongodb-reactive
+	implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-mongodb-reactive', version: '2.4.4'
+	implementation group: 'org.springframework', name: 'spring-webflux', version: '5.3.5'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testCompile group: 'junit', name: 'junit', version: '4.12'
+	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+	compile group: 'org.springframework.security', name: 'spring-security-crypto', version: '5.4.0'
+	testImplementation group: 'de.flapdoodle.embed', name: 'de.flapdoodle.embed.mongo', version: '2.2.0'
+	implementation group: 'org.springframework', name: 'spring-context', version: '5.3.4'
+	testCompile group: 'com.google.code.gson', name: 'gson', version: '2.8.5'
+	compile group: 'org.springframework.boot', name: 'spring-boot-starter-security', version: '2.3.4.RELEASE'
+	implementation group: 'io.jsonwebtoken', name: 'jjwt', version: '0.9.1'
+	compile group: 'io.jsonwebtoken', name: 'jjwt', version: '0.9.1'
+}
+
+test {
+	useJUnitPlatform()
+	finalizedBy jacocoTestReport // report is always generated after tests run
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		html.enabled true
+		xml.enabled true
+	}
+	afterEvaluate {
+		getClassDirectories().setFrom(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
+					'**/edu/eci/ieti/envirify/model/**',
+					'**/edu/eci/ieti/envirify/EnvirifyApplication**'])
+		})
+	}
+}
+
+jacoco {
+	reportsDir = file("${project.projectDir}/build/reports")
+}
+
+
+
+
+sonarqube {
+	properties {
+		property "sonar.projectKey", "3rror418_Envirify-BackEnd"
+		property "sonar.organization", "3rror418"
+		property "sonar.host.url", "https://sonarcloud.io"
+		property "sonar.coverage.jacoco.xmlReportPaths", "${buildDir}/reports/test/jacocoTestReport.xml"
+		property 'sonar.junit.reportsPath', "${buildDir}/test-results"
+		property 'sonar.binaries', "${buildDir}/classes/main/"
+		property "sonar.core.codeCoveragePlugin", "jacoco"
+		property "sonar.verbose", "true"
+		property "sonar.sources", "src/main/"
+		property "sonar.tests", "src/test/"
+		property "sonar.coverage.exclusions", "**/edu/eci/ieti/envirify/model/**," + "**/edu/eci/ieti/envirify/security/WebSecurityConfig**"
+	}
+}
+
+tasks.named("sonarqube") {
+	dependsOn(tasks.named("jacocoTestReport"))
+}
+
+check.dependsOn jacocoTestReport
